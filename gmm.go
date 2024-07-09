@@ -274,3 +274,16 @@ func (gmm *GaussianMixture) Predict(X *mat.Dense) []int {
 
 	return predictions
 }
+
+// CalculateBIC computes the Bayesian Information Criterion score
+func (gmm *GaussianMixture) CalculateBIC(X *mat.Dense) float64 {
+	nSamples, nFeatures := X.Dims()
+	logLikelihood := gmm.computeLogLikelihood(X)
+
+	// Calculate the number of free parameters
+	nParams := gmm.NComponents - 1 + // weights (minus 1 because they sum to 1)
+		gmm.NComponents*nFeatures + // means
+		gmm.NComponents*nFeatures*(nFeatures+1)/2 // covariances
+
+	return -2*logLikelihood + math.Log(float64(nSamples))*float64(nParams)
+}
