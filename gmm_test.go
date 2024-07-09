@@ -11,7 +11,7 @@ import (
 )
 
 func TestGaussianMixture(t *testing.T) {
-	// Generate random data from a mixture of Gaussians
+	// Generate random trainData from a mixture of Gaussians
 	nSamples := 1000
 	nFeatures := 2
 	nComponents := 3
@@ -32,32 +32,39 @@ func TestGaussianMixture(t *testing.T) {
 	// Create a random source
 	src := rand.NewSource(uint64(time.Now().UnixNano()))
 
-	data := mat.NewDense(nSamples, nFeatures, nil)
+	trainData := mat.NewDense(nSamples, nFeatures, nil)
+	testData := mat.NewDense(nSamples, nFeatures, nil)
 	expectations := make([]int, nSamples)
 	for i := 0; i < nSamples; i++ {
 		// Choose a component randomly based on weights
 		chosenComponent := rand.Intn(nComponents)
 
-		// Generate a sample from the chosen component
+		// Generate a Normal distribution for the chosen component
 		dist, ok := distmv.NewNormal(means[chosenComponent], covs[chosenComponent], src)
 		if !ok {
 			t.Fatalf("Error creating normal distribution.")
 		}
-		sample := make([]float64, nFeatures)
-		dist.Rand(sample)
-		data.SetRow(i, sample)
+
+		trainSample := make([]float64, nFeatures)
+		dist.Rand(trainSample)
+		trainData.SetRow(i, trainSample)
+
+		testSample := make([]float64, nFeatures)
+		dist.Rand(testSample)
+		testData.SetRow(i, testSample)
+
 		expectations[i] = chosenComponent
 	}
 
 	// Fit GMM
 	gmm := NewGaussianMixture(nComponents)
-	err := gmm.Fit(data)
+	err := gmm.Fit(trainData)
 	if err != nil {
 		t.Fatalf("Error fitting GMM: %v", err)
 	}
 
 	// Make predictions
-	predictions := gmm.Predict(data)
+	predictions := gmm.Predict(testData)
 	t.Log(predictions)
 	t.Log(expectations)
 
